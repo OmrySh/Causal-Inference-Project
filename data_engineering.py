@@ -91,7 +91,7 @@ def convert_date_bytes(df):
     return df
 
 
-def convert_state_codes(df, codebook_path='data/states_codebook.txt.txt'):
+def convert_state_codes(df, codebook_path='data/states_codebook.txt'):
     """
     Convert state codes in the _STATE column to state names using a codebook file.
 
@@ -192,12 +192,12 @@ Only in 2017-2018
 """
 
 
-questionnaires_df = load_questionnaires_with_mapping(start_year=2010, end_year=2018)
-questionnaires_df.to_csv('data/questionnaires_data.csv')
-pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
-pollution_df = process_pollution_data(pollution_path)
-pollution_df.to_csv('data/pollution_data.csv')
+def run_pre_processing():
+    questionnaires_df = load_questionnaires_with_mapping(start_year=2010, end_year=2018)
+    questionnaires_df.to_csv('data/questionnaires_data.csv')
+    pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
+    pollution_df = process_pollution_data(pollution_path)
+    pollution_df.to_csv('data/pollution_data.csv')
 
-merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
-print(merged_df.head())
-merged_df.to_csv('data/merged_data.csv')
+    merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
+    merged_df.to_csv('data/merged_data.csv')
