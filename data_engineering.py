@@ -3,6 +3,31 @@ import pandas as pd
 import os
 import time
 
+def count_numerical_sleeptime(df, col):
+    """
+    Group the DataFrame by _STATE and count non-NaN numerical values in the SLEPTIME column.
+
+    Parameters:
+    - df (pd.DataFrame): The input DataFrame containing _STATE and SLEPTIME columns.
+
+    Returns:
+    - pd.DataFrame: A DataFrame with _STATE and the count of valid numerical values in SLEPTIME.
+    """
+    # Ensure SLEPTIME contains only numerical values and drop non-numeric rows
+    df['SLEPTIME_numeric'] = pd.to_numeric(df[col], errors='coerce')
+
+    # Group by _STATE and count non-NaN numerical values in SLEPTIME
+    result = (
+        df.groupby('_STATE')['SLEPTIME_numeric']
+        .apply(lambda x: x.notna().sum())
+        .reset_index(name='Valid_SLEPTIME_Count')
+    )
+
+    for row in result.iterrows():
+        print(row)
+
+    return result
+
 
 def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
     """
@@ -62,8 +87,10 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
             for col in missing_columns:
                 print(f"Column '{col}' not found in any of the possible names for year {year}. Setting it to NaN.")
                 data_subset[col] = pd.NA
-
-            data_subset['Year'] = year  # Add year column
+            if 'SLEPTIME' in data_subset.keys():
+                count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            elif 'SLEPTIM1' in data_subset.keys():
+                count_numerical_sleeptime(data_subset, 'SLEPTIME')
             all_data.append(data_subset)
 
         except Exception as e:
@@ -193,7 +220,7 @@ Only in 2017-2018
 
 
 def run_pre_processing():
-    questionnaires_df = load_questionnaires_with_mapping(start_year=2010, end_year=2018)
+    questionnaires_df = load_questionnaires_with_mapping(start_year=2011, end_year=2018)
     questionnaires_df.to_csv('data/questionnaires_data.csv')
     pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
     pollution_df = process_pollution_data(pollution_path)
@@ -201,3 +228,5 @@ def run_pre_processing():
 
     merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
     merged_df.to_csv('data/merged_data.csv')
+
+run_pre_processing()
