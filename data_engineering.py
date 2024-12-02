@@ -46,9 +46,10 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
         'IMONTH': ['IMONTH'],  # Interview month
         'IYEAR': ['IYEAR'],  # Interview year
         'SLEPTIME': ['SLEPTIME', 'SLEPTIM1'],  # Hours of sleep
-        'ADSLEEP': ['ADSLEEP'],  # Trouble sleeping (2012-2014 missing)
-        'SLEPDAY': ['SLEPDAY'],  # Falling asleep during day (2010-2012 only)
-        'SLEPDAY1': ['SLEPDAY1']  # Falling asleep during day (2016-2018 only)
+        'PHYSHLTH': ['PHYSHLTH']
+        # 'ADSLEEP': ['ADSLEEP'],  # Trouble sleeping (2012-2014 missing)
+        # 'SLEPDAY': ['SLEPDAY'],  # Falling asleep during day (2010-2012 only)
+        # 'SLEPDAY1': ['SLEPDAY1']  # Falling asleep during day (2016-2018 only)
     }
 
     all_data = []
@@ -220,7 +221,7 @@ Only in 2017-2018
 
 
 def run_pre_processing():
-    questionnaires_df = load_questionnaires_with_mapping(start_year=2011, end_year=2018)
+    questionnaires_df = load_questionnaires_with_mapping(start_year=2005, end_year=2018)
     questionnaires_df.to_csv('data/questionnaires_data.csv')
     pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
     pollution_df = process_pollution_data(pollution_path)
@@ -230,3 +231,4 @@ def run_pre_processing():
     merged_df.to_csv('data/merged_data.csv')
 
 run_pre_processing()
+
