@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import time
 
+
 def count_numerical_sleeptime(df, col):
     """
     Group the DataFrame by _STATE and count non-NaN numerical values in the SLEPTIME column.
@@ -92,6 +93,7 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
                 count_numerical_sleeptime(data_subset, 'SLEPTIME')
             elif 'SLEPTIM1' in data_subset.keys():
                 count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            data_subset['Year'] = year  # Add year column
             all_data.append(data_subset)
 
         except Exception as e:
@@ -230,5 +232,5 @@ def run_pre_processing():
     merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
     merged_df.to_csv('data/merged_data.csv')
 
-run_pre_processing()
 
+run_pre_processing()
