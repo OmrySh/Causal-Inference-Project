@@ -51,6 +51,9 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
         # 'SLEPDAY': ['SLEPDAY'],  # Falling asleep during day (2010-2012 only)
         # 'SLEPDAY1': ['SLEPDAY1']  # Falling asleep during day (2016-2018 only)
     }
+    con_founders_columns = pd.read_csv('data/con_founders_questions.csv')
+    for con_founder in con_founders_columns['code'].values:
+        column_mapping[con_founder] = con_founder
 
     all_data = []
 
@@ -88,10 +91,10 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
             for col in missing_columns:
                 print(f"Column '{col}' not found in any of the possible names for year {year}. Setting it to NaN.")
                 data_subset[col] = pd.NA
-            if 'SLEPTIME' in data_subset.keys():
-                count_numerical_sleeptime(data_subset, 'SLEPTIME')
-            elif 'SLEPTIM1' in data_subset.keys():
-                count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            # if 'SLEPTIME' in data_subset.keys():
+            #     count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            # elif 'SLEPTIM1' in data_subset.keys():
+            #     count_numerical_sleeptime(data_subset, 'SLEPTIME')
             all_data.append(data_subset)
 
         except Exception as e:
@@ -223,12 +226,26 @@ Only in 2017-2018
 def run_pre_processing():
     questionnaires_df = load_questionnaires_with_mapping(start_year=2005, end_year=2018)
     questionnaires_df.to_csv('data/questionnaires_data.csv')
-    pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
-    pollution_df = process_pollution_data(pollution_path)
-    pollution_df.to_csv('data/pollution_data.csv')
+    # pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
+    # pollution_df = process_pollution_data(pollution_path)
+    # pollution_df.to_csv('data/pollution_data.csv')
+    #
+    # merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
+    # merged_df.to_csv('data/merged_data.csv')
 
-    merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
-    merged_df.to_csv('data/merged_data.csv')
+# run_pre_processing()
+count_dic = {}
+q = pd.read_csv('data/con_founders_questions.csv')
+for i in range(2005, 2019):
+    df = pd.read_sas(f'data/questionnaires/LLCP{i}.XPT')
+    count = 0
+    for c in q['code'].values:
+        if c in df.keys():
+            print(f"{c} yes")
+            count += 1
+        else:
+            print(f"{c} no")
+    count_dic[i] = count
 
-run_pre_processing()
-
+for year in count_dic:
+    print(f'{year}: {count_dic[year]} out of {len(q["code"].values)}')
