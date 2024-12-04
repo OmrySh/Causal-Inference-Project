@@ -3,18 +3,17 @@ import matplotlib.pyplot as plt
 
 
 def display_col_in_state(df, col, state):
-
     # df = df[df['Year'] == 2016]
     filtered = df[df['State'] == state]
     filtered = filtered[filtered[col] <= 30]
 
     grouped_data = (
-            filtered
+        filtered
             .groupby(['Year', 'Month'])
-            [[col]]
+        [[col]]
             .agg(['mean', 'median'])
             .reset_index()
-        )
+    )
     # Flatten the column MultiIndex for easier access
     grouped_data.columns = ['Year', 'Month', f'{col}_mean', f'{col}_median']
 
@@ -38,9 +37,10 @@ def display_col_in_state(df, col, state):
     print(grouped_data.head(37))
     print(grouped_data.tail(38))
 
+
 col = 'PHYSHLTH'
 states = ['Indiana', 'New Mexico', 'Kansas', 'District of Columbia', 'Connecticut', 'Maryland', 'Wyoming',
-         'Nevada', 'Alabama', 'Arkansas', 'Hawaii', 'South Dakota']
+          'Nevada', 'Alabama', 'Arkansas', 'Hawaii', 'South Dakota']
 states = ['Maine']
 df = pd.read_csv('data/questionnaires_data.csv')
 
