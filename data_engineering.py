@@ -29,7 +29,7 @@ def count_numerical_sleeptime(df, col):
     return result
 
 
-def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
+def load_questionnaires_with_mapping(column_mapping={}, start_year=2010, end_year=2020):
     """
     Load XPT files and handle inconsistent column names, selecting required columns.
 
@@ -41,19 +41,16 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
     - pandas.DataFrame: Unified DataFrame with consistent column names.
     """
     # Column mappings to handle inconsistent naming across years
-    column_mapping = {
-        '_STATE': ['_STATE'],  # State number
-        'IMONTH': ['IMONTH'],  # Interview month
-        'IYEAR': ['IYEAR'],  # Interview year
-        'SLEPTIME': ['SLEPTIME', 'SLEPTIM1'],  # Hours of sleep
-        'PHYSHLTH': ['PHYSHLTH']
+    column_mapping['_STATE'] = ['_STATE']  # State number
+    column_mapping['IMONTH']= ['IMONTH']  # Interview month
+    column_mapping['IYEAR']= ['IYEAR']  # Interview year
+    column_mapping['SLEPTIME']= ['SLEPTIME', 'SLEPTIM1']  # Hours of sleep
         # 'ADSLEEP': ['ADSLEEP'],  # Trouble sleeping (2012-2014 missing)
         # 'SLEPDAY': ['SLEPDAY'],  # Falling asleep during day (2010-2012 only)
         # 'SLEPDAY1': ['SLEPDAY1']  # Falling asleep during day (2016-2018 only)
-    }
-    con_founders_columns = pd.read_csv('data/con_founders_questions.csv')
-    for con_founder in con_founders_columns['code'].values:
-        column_mapping[con_founder] = con_founder
+    # con_founders_columns = pd.read_csv('data/con_founders_questions.csv')
+    # for con_founder in con_founders_columns['code'].values:
+    #     column_mapping[con_founder] = con_founder
 
     all_data = []
 
@@ -223,8 +220,8 @@ Only in 2017-2018
 """
 
 
-def run_pre_processing():
-    questionnaires_df = load_questionnaires_with_mapping(start_year=2005, end_year=2018)
+def run_pre_processing(common_dict):
+    questionnaires_df = load_questionnaires_with_mapping(column_mapping=common_dict,start_year=2005, end_year=2018)
     questionnaires_df.to_csv('data/questionnaires_data.csv')
     # pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
     # pollution_df = process_pollution_data(pollution_path)
@@ -233,19 +230,60 @@ def run_pre_processing():
     # merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
     # merged_df.to_csv('data/merged_data.csv')
 
-# run_pre_processing()
-count_dic = {}
-q = pd.read_csv('data/con_founders_questions.csv')
-for i in range(2005, 2019):
-    df = pd.read_sas(f'data/questionnaires/LLCP{i}.XPT')
-    count = 0
-    for c in q['code'].values:
-        if c in df.keys():
-            print(f"{c} yes")
-            count += 1
-        else:
-            print(f"{c} no")
-    count_dic[i] = count
 
-for year in count_dic:
-    print(f'{year}: {count_dic[year]} out of {len(q["code"].values)}')
+
+import pickle
+
+# count_dic = {}
+# q = pd.read_csv('data/con_founders_questions.csv')
+# features_dict = {}
+# for i in range(2005, 2019):
+#     features_dict[f'{i}_yes'] = []
+#     features_dict[f'{i}_no'] = []
+#     df = pd.read_sas(f'data/questionnaires/LLCP{i}.XPT')
+#     count = 0
+#     for c in q['code'].values:
+#         if c in df.keys():
+#             print(f"{c} yes")
+#             features_dict[f'{i}_yes'].append(c)
+#             count += 1
+#         else:
+#             print(f"{c} no")
+#             features_dict[f'{i}_no'].append(c)
+#
+#     count_dic[i] = count
+
+
+
+# with open('data/features.pkl', 'wb') as file:
+#     pickle.dump(features_dict, file)
+# for year in count_dic:
+#     print(f'{year}: {count_dic[year]} out of {len(q["code"].values)}')
+
+with open('data/features.pkl', 'rb') as file:
+    loaded_data = pickle.load(file)
+print(loaded_data)
+
+
+def find_common_features(features_dict):
+    # Start with the features from the first year
+    common_features = set(next(iter(features_dict.values())))
+
+    # Intersect with features from all other years
+    for features in features_dict.values():
+        common_features.intersection_update(features)
+
+    # Convert the result back to a list
+    return list(common_features)
+
+features_by_year = {}
+for i in range(2005, 2019):
+    features_by_year[i] = loaded_data[f'{i}_yes']
+
+common_features = find_common_features(features_by_year)
+common_dict = {}
+for common in common_features:
+    common_dict[common] = [common]
+print(common_features)
+
+run_pre_processing(common_dict)
