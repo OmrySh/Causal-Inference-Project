@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -38,11 +39,29 @@ def display_col_in_state(df, col, state):
     print(grouped_data.head(37))
     print(grouped_data.tail(38))
 
-col = 'PHYSHLTH'
-states = ['Indiana', 'New Mexico', 'Kansas', 'District of Columbia', 'Connecticut', 'Maryland', 'Wyoming',
-         'Nevada', 'Alabama', 'Arkansas', 'Hawaii', 'South Dakota']
-states = ['Maine']
-df = pd.read_csv('data/questionnaires_data.csv')
 
-for state in states:
-    display_col_in_state(df, col, state)
+def plot_feature_distributions(dataset, bins=20):
+    """
+    Plots histograms for each feature in the dataset.
+
+    Parameters:
+    - dataset: DataFrame containing the features.
+    - bins: Number of bins for the histogram (default is 20).
+    """
+    num_features = dataset.shape[1]
+    for column in ['PHYSHLTH']:
+        plt.figure(figsize=(8, 5))
+        plt.hist(dataset[column], bins=bins, color='blue', edgecolor='black', alpha=0.7)
+        plt.title(f"Distribution of {column}", fontsize=14)
+        plt.xlabel(column, fontsize=12)
+        plt.ylabel("Frequency", fontsize=12)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.show()
+
+processed_data = pd.read_csv('data/processed_questionnaires_data.csv')
+# pre_data = pd.read_csv('data/questionnaires_data.csv')
+# print(len(pre_data))
+print(len(processed_data))
+print(np.unique(processed_data['Year'].values))
+plot_feature_distributions(processed_data)
+
