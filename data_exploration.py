@@ -1,10 +1,10 @@
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 def display_col_in_state(df, col, state):
-
     # df = df[df['Year'] == 2016]
     filtered = df[df['State'] == state]
     filtered = filtered[filtered[col] <= 30]
@@ -16,6 +16,12 @@ def display_col_in_state(df, col, state):
             .agg(['mean', 'median'])
             .reset_index()
         )
+        filtered
+            .groupby(['Year', 'Month'])
+        [[col]]
+            .agg(['mean', 'median'])
+            .reset_index()
+    )
     # Flatten the column MultiIndex for easier access
     grouped_data.columns = ['Year', 'Month', f'{col}_mean', f'{col}_median']
 
@@ -65,3 +71,11 @@ print(len(processed_data))
 print(np.unique(processed_data['Year'].values))
 plot_feature_distributions(processed_data)
 
+col = 'PHYSHLTH'
+states = ['Indiana', 'New Mexico', 'Kansas', 'District of Columbia', 'Connecticut', 'Maryland', 'Wyoming',
+          'Nevada', 'Alabama', 'Arkansas', 'Hawaii', 'South Dakota']
+states = ['Maine']
+df = pd.read_csv('data/questionnaires_data.csv')
+
+for state in states:
+    display_col_in_state(df, col, state)

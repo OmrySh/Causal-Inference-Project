@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import time
 import pickle
+
 def count_numerical_sleeptime(df, col):
     """
     Group the DataFrame by _STATE and count non-NaN numerical values in the SLEPTIME column.
@@ -27,6 +28,7 @@ def count_numerical_sleeptime(df, col):
         print(row)
 
     return result
+
 
 
 def load_questionnaires_with_mapping(column_mapping={}, start_year=2010, end_year=2020):
@@ -88,10 +90,11 @@ def load_questionnaires_with_mapping(column_mapping={}, start_year=2010, end_yea
             for col in missing_columns:
                 print(f"Column '{col}' not found in any of the possible names for year {year}. Setting it to NaN.")
                 data_subset[col] = pd.NA
-            # if 'SLEPTIME' in data_subset.keys():
-            #     count_numerical_sleeptime(data_subset, 'SLEPTIME')
-            # elif 'SLEPTIM1' in data_subset.keys():
-            #     count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            if 'SLEPTIME' in data_subset.keys():
+                count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            elif 'SLEPTIM1' in data_subset.keys():
+                count_numerical_sleeptime(data_subset, 'SLEPTIME')
+            data_subset['Year'] = year  # Add year column
             all_data.append(data_subset)
 
         except Exception as e:
@@ -332,10 +335,4 @@ for note in features_range['notes'].values:
 questionnaires_dataset = pd.read_csv('data/questionnaires_data.csv')
 processed_dataset = process_features(features_range, questionnaires_dataset)
 processed_dataset.to_csv('data/processed_questionnaires_data.csv')
-
-
-
-
-
-
 
