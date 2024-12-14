@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import time
-
+import pickle
 
 def count_numerical_sleeptime(df, col):
     """
@@ -30,7 +30,8 @@ def count_numerical_sleeptime(df, col):
     return result
 
 
-def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
+
+def load_questionnaires_with_mapping(column_mapping={}, start_year=2010, end_year=2020):
     """
     Load XPT files and handle inconsistent column names, selecting required columns.
 
@@ -42,16 +43,16 @@ def load_questionnaires_with_mapping(start_year=2010, end_year=2020):
     - pandas.DataFrame: Unified DataFrame with consistent column names.
     """
     # Column mappings to handle inconsistent naming across years
-    column_mapping = {
-        '_STATE': ['_STATE'],  # State number
-        'IMONTH': ['IMONTH'],  # Interview month
-        'IYEAR': ['IYEAR'],  # Interview year
-        'SLEPTIME': ['SLEPTIME', 'SLEPTIM1'],  # Hours of sleep
-        'PHYSHLTH': ['PHYSHLTH']
+    column_mapping['_STATE'] = ['_STATE']  # State number
+    column_mapping['IMONTH']= ['IMONTH']  # Interview month
+    column_mapping['IYEAR']= ['IYEAR']  # Interview year
+    column_mapping['SLEPTIME']= ['SLEPTIME', 'SLEPTIM1']  # Hours of sleep
         # 'ADSLEEP': ['ADSLEEP'],  # Trouble sleeping (2012-2014 missing)
         # 'SLEPDAY': ['SLEPDAY'],  # Falling asleep during day (2010-2012 only)
         # 'SLEPDAY1': ['SLEPDAY1']  # Falling asleep during day (2016-2018 only)
-    }
+    # con_founders_columns = pd.read_csv('data/con_founders_questions.csv')
+    # for con_founder in con_founders_columns['code'].values:
+    #     column_mapping[con_founder] = con_founder
 
     all_data = []
 
@@ -209,28 +210,129 @@ def merge_pollution_and_xpt(pollution_df, questionnaires_df):
     merged_df = pd.merge(pollution_df, questionnaires_df, on=['Year', 'Month', 'State'], how='inner')
 
     return merged_df
-"""
-Code Book
-SLEPTIME or SLEPTIM1: On average, how many hours of sleep do you get in a 24-hour period?
-All year except 2015
-ADSLEEP: Over the last 2 weeks, how many days have you had trouble falling asleep or staying asleep or sleeping too much?
-All except 2012-2014, 2016
-SLEPDAY: During the past 30 days, for about how many days did you find yourself unintentionally falling asleep during the day?
-Only in 2010-2012
-SLEPDAY1: Over the last 2 weeks, how many days did you unintentionally fall asleep during the day?
-Only in 2017-2018
-"""
 
 
-def run_pre_processing():
-    questionnaires_df = load_questionnaires_with_mapping(start_year=2005, end_year=2018)
+def process_features(dataframe, dataset):
+    """
+    Processes a dataset based on feature rules provided in the dataframe.
+
+    Parameters:
+    - dataframe: DataFrame with feature definitions, ranges, and notes.
+    - dataset: DataFrame with the actual dataset to process.
+
+    Returns:
+    - Processed dataset.
+    """
+    processed_dataset = dataset.copy()
+
+    for _, row in dataframe.iterrows():
+        feature = row['feature']
+        low = row['low']
+        high = row['high']
+        notes = row['notes']
+        print(feature)
+        print("before", len(processed_dataset))
+        if not pd.isna(notes) and 'None is' in notes:
+            replace_value = int(notes.split(' ')[-1])
+            if replace_value < low:
+                low = replace_value
+            processed_dataset[feature].fillna(replace_value, inplace=True)
+            if "88" not in notes:
+                processed_dataset = processed_dataset[(processed_dataset[feature] >= low) & (processed_dataset[feature] <= high)]
+
+        if pd.isna(notes):
+            # Keep only rows within range [low, high]
+            processed_dataset = processed_dataset[(processed_dataset[feature] >= low) & (processed_dataset[feature] <= high)]
+
+        elif "88" in notes:
+            # Replace 88 with 0 and keep rows within range [low, high] or equal to 0
+            processed_dataset[feature] = processed_dataset[feature].apply(lambda x: 0 if x == 88 else x)
+            processed_dataset = processed_dataset[(processed_dataset[feature].between(low, high)) | (processed_dataset[feature] == 0)]
+
+        elif notes == "one hot":
+            # Convert to one-hot encoding; keep only rows in range
+            valid_rows = (processed_dataset[feature] >= low) & (processed_dataset[feature] <= high)
+            one_hot = pd.get_dummies(processed_dataset.loc[valid_rows, feature], prefix=feature).astype(int)
+            processed_dataset = processed_dataset[valid_rows].drop(columns=[feature])
+            processed_dataset = pd.concat([processed_dataset, one_hot], axis=1)
+
+
+        print("after", len(processed_dataset))
+
+
+    cols_to_drop = []
+    for col in processed_dataset.keys():
+        if col not in dataframe['feature'].values and col not in ['State', 'Year', 'Month'] and 'MARITAL' not in col:
+            cols_to_drop.append(col)
+    processed_dataset = processed_dataset.drop(columns=cols_to_drop)
+
+    return processed_dataset
+
+def find_common_features(features_dict):
+    # Start with the features from the first year
+    common_features = set(next(iter(features_dict.values())))
+
+    # Intersect with features from all other years
+    for features in features_dict.values():
+        common_features.intersection_update(features)
+
+    # Convert the result back to a list
+    return list(common_features)
+
+def get_common_features_dict():
+    with open('data/features.pkl', 'rb') as file:
+        loaded_data = pickle.load(file)
+    print(loaded_data)
+    features_by_year = {}
+    for i in range(2005, 2019):
+        features_by_year[i] = loaded_data[f'{i}_yes']
+
+    common_features = find_common_features(features_by_year)
+    common_dict = {}
+    for common in common_features:
+        common_dict[common] = [common]
+    print(common_features)
+
+def find_features_in_questionnaires():
+    count_dic = {}
+    q = pd.read_csv('data/con_founders_questions.csv')
+    features_dict = {}
+    for i in range(2005, 2019):
+        features_dict[f'{i}_yes'] = []
+        features_dict[f'{i}_no'] = []
+        df = pd.read_sas(f'data/questionnaires/LLCP{i}.XPT')
+        count = 0
+        for c in q['code'].values:
+            if c in df.keys():
+                print(f"{c} yes")
+                features_dict[f'{i}_yes'].append(c)
+                count += 1
+            else:
+                print(f"{c} no")
+                features_dict[f'{i}_no'].append(c)
+
+        count_dic[i] = count
+
+    with open('data/features.pkl', 'wb') as file:
+        pickle.dump(features_dict, file)
+    for year in count_dic:
+        print(f'{year}: {count_dic[year]} out of {len(q["code"].values)}')
+
+def run_pre_processing(common_dict):
+    questionnaires_df = load_questionnaires_with_mapping(column_mapping=common_dict,start_year=2005, end_year=2018)
     questionnaires_df.to_csv('data/questionnaires_data.csv')
-    pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
-    pollution_df = process_pollution_data(pollution_path)
-    pollution_df.to_csv('data/pollution_data.csv')
+    # pollution_path = 'data/uspollution_pollution_us_2000_2016.csv'
+    # pollution_df = process_pollution_data(pollution_path)
+    # pollution_df.to_csv('data/pollution_data.csv')
+    #
+    # merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
+    # merged_df.to_csv('data/merged_data.csv')
 
-    merged_df = merge_pollution_and_xpt(pollution_df, questionnaires_df)
-    merged_df.to_csv('data/merged_data.csv')
 
+features_range = pd.read_csv('data/features_value_range.csv')
+for note in features_range['notes'].values:
+    print(note)
+questionnaires_dataset = pd.read_csv('data/questionnaires_data.csv')
+processed_dataset = process_features(features_range, questionnaires_dataset)
+processed_dataset.to_csv('data/processed_questionnaires_data.csv')
 
-run_pre_processing()
