@@ -16,12 +16,7 @@ def display_col_in_state(df, col, state):
             .agg(['mean', 'median'])
             .reset_index()
         )
-        filtered
-            .groupby(['Year', 'Month'])
-        [[col]]
-            .agg(['mean', 'median'])
-            .reset_index()
-    )
+    filtered.groupby(['Year', 'Month'])[[col]].agg(['mean', 'median']).reset_index()
     # Flatten the column MultiIndex for easier access
     grouped_data.columns = ['Year', 'Month', f'{col}_mean', f'{col}_median']
 

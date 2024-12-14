@@ -30,3 +30,7 @@ To replicate the analysis:
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/OmrySh/Causal-Inference-Project.git
+
+2. **Install Dependencies Ensure you have the necessary Python packages installed. You can use the following command:**
+   ```bash
+   pip install -r requirements.txt
